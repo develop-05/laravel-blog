@@ -1,2 +1,2 @@
-# larvae-blog
+# laravel-blog
 Laravel project
