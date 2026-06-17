@@ -1,4 +1,4 @@
-FROM dunglas/frankenphp:latest-php8.2
+FROM dunglas/frankenphp:latest-php8.3
 
 # Встановлюємо необхідні розширення для Laravel (включаючи БД)
 RUN install-php-extensions pcntl pdo_mysql pdo_pgsql zip intl gd opcache
