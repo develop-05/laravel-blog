@@ -28,9 +28,9 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 WORKDIR /var/www/html
 COPY . .
 
-# Встановлюємо залежності без скриптів (щоб не падало через відсутність БД під час збірки)
+# Встановлюємо залежності, ігноруючи будь-які конфлікти версій та платформ
 ENV COMPOSER_ALLOW_SUPERUSER=1
-RUN composer install --no-dev --optimize-autoloader --no-scripts
+RUN composer install --no-dev --optimize-autoloader --no-scripts --ignore-platform-reqs
 
 # Виставляємо правильні права для Laravel
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
