@@ -1,4 +1,4 @@
-FROM dunglas/frankenphp:latest-php8.3
+FROM dunglas/frankenphp:latest-php8.2
 
 # Встановлюємо необхідні розширення для Laravel (включаючи БД)
 RUN install-php-extensions pcntl pdo_mysql pdo_pgsql zip intl gd opcache
@@ -11,12 +11,12 @@ ENV COMPOSER_ALLOW_SUPERUSER=1
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 RUN composer install --no-dev --optimize-autoloader
 
-# Налаштовуємо права для Laravel
+# Налаштовуємо права для файлової системи Laravel
 RUN chown -R www-data:www-data /app/storage /app/bootstrap/cache
 
-# Відкриваємо порт
+# Відкриваємо порт, який Railway дає автоматично
 EXPOSE 8080
 ENV PORT=8080
 
-# Команда для старту сервера
+# Команда для старту надшвидкого сервера FrankenPHP
 CMD ["frankenphp", "php-server", "--listen", ":8080", "--public-dir", "public"]
