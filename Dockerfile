@@ -13,13 +13,8 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     && docker-php-ext-install pdo pdo_mysql pdo_pgsql mbstring exif pcntl bcmath xml zip
 
-# Увімкнення Apache mod_rewrite для роботи роутингу Laravel
+# Увімкнення Apache mod_rewrite для роботи роутингу
 RUN a2enmod rewrite
-
-# Зміна кореневої папки Apache на public-директорію Laravel
-ENV APACHE_DOCUMENT_ROOT /var/www/html/public
-RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
-RUN sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/sites-available/*.conf
 
 # Встановлюємо Composer всередину контейнера
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
@@ -28,16 +23,15 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 WORKDIR /var/www/html
 COPY . .
 
-# Встановлюємо залежності, ігноруючи будь-які конфлікти версій та платформ
+# Встановлюємо залежності, ігноруючи конфлікти версій
 ENV COMPOSER_ALLOW_SUPERUSER=1
 RUN composer install --no-dev --optimize-autoloader --no-scripts --ignore-platform-reqs
 
-# Виставляємо права на весь проєкт для Apache
+# Залізобетонні права для Apache на всю папку
 RUN chown -R www-data:www-data /var/www/html \
-    && chmod -R 755 /var/www/html \
     && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
-# Render автоматично дає порт 10000 для Apache в безкоштовному тарифі
+# Порт для Render
 EXPOSE 10000
 RUN sed -i 's/Listen 80/Listen 10000/' /etc/apache2/ports.conf /etc/apache2/sites-available/*.conf
 
