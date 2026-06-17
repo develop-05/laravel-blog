@@ -1,22 +1,42 @@
-FROM dunglas/frankenphp:latest-php8.3
+FROM php:8.3-apache
 
-# Встановлюємо необхідні розширення для Laravel (включаючи БД)
-RUN install-php-extensions pcntl pdo_mysql pdo_pgsql zip intl gd opcache
+# Встановлюємо системні залежності та базові розширення PHP
+RUN apt-get update && apt-get install -y \
+    libpng-dev \
+    libonig-dev \
+    libxml2-dev \
+    zip \
+    unzip \
+    git \
+    curl \
+    libzip-dev \
+    libpq-dev \
+    && docker-php-ext-install pdo pdo_mysql pdo_pgsql mbstring exif pcntl bcmath xml zip
 
-# Копіюємо код проєкту в контейнер
-COPY . /app
+# Увімкнення Apache mod_rewrite для роботи роутингу Laravel
+RUN a2enmod rewrite
 
-# Встановлюємо Composer та залежності
+# Зміна кореневої папки Apache на public-директорію Laravel
+ENV APACHE_DOCUMENT_ROOT /var/www/html/public
+RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
+RUN sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/sites-available/*.conf
+
+# Встановлюємо Composer всередину контейнера
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# Копіюємо проєкт у контейнер
+WORKDIR /var/www/html
+COPY . .
+
+# Встановлюємо залежності без скриптів (щоб не падало через відсутність БД під час збірки)
 ENV COMPOSER_ALLOW_SUPERUSER=1
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
-RUN composer install --no-dev --optimize-autoloader
+RUN composer install --no-dev --optimize-autoloader --no-scripts
 
-# Налаштовуємо права для файлової системи Laravel
-RUN chown -R www-data:www-data /app/storage /app/bootstrap/cache
+# Виставляємо правильні права для Laravel
+RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 
-# Відкриваємо порт, який Railway дає автоматично
-EXPOSE 8080
-ENV PORT=8080
+# Render автоматично дає порт 10000 для Apache в безкоштовному тарифі
+EXPOSE 10000
+RUN sed -i 's/Listen 80/Listen 10000/' /etc/apache2/ports.conf /etc/apache2/sites-available/*.conf
 
-# Команда для старту надшвидкого сервера FrankenPHP
-CMD ["frankenphp", "php-server", "--listen", ":8080", "--public-dir", "public"]
+CMD ["apache2-foreground"]
